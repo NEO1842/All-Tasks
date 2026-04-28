@@ -1,19 +1,16 @@
 # Code of Conduct
 
 ## Purpose
-This repository is focused on maintaining a clean and reusable structure.
+This repository exists to generate and organize issues.
 
 ## Respect
 Be respectful in all interactions.
 
-## Stay Relevant
-Discussions and contributions must be related to improving the repository structure.
+## Stay Focused
+Keep all contributions related to issue creation and structure.
 
-## No Personal Content
-Do not add personal tasks, schedules, or unrelated content.
-
-## Keep It Minimal
-Avoid unnecessary complexity. Keep contributions simple and clear.
+## Keep It Simple
+Avoid unnecessary complexity.
 
 ## Enforcement
-Maintainers may remove content that does not follow these guidelines.
+Content that does not follow these rules may be removed.
