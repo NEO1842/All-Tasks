@@ -1,13 +1,16 @@
-# Code of Conduct
+# Contributing
 
-## Be respectful
-All interactions should be constructive and respectful.
+This repository is designed for issue-based task creation.
 
-## Stay on topic
-Keep discussions related to improving the repository structure.
+## Allowed
+- Creating issues for tasks, ideas, or improvements
+- Suggesting better issue structure
 
-## No spam or unrelated content
-Avoid unnecessary or irrelevant contributions.
+## Not Allowed
+- Adding unrelated files or content
+- Using the repository as a storage space
 
-## Enforcement
-Unacceptable behavior may result in removal of content.
+## How to contribute
+1. Create an issue
+2. Keep it simple and clear
+3. Let Projects handle management
