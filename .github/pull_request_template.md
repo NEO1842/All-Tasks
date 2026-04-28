@@ -1,17 +1,12 @@
 ## 🚀 Overview
-Describe the change briefly
+Describe the change
 
-## 📂 Type of Change
-- [x] Structure improvement
+## 📂 Type
+- [x] Structure update
 - [x] Template update
 - [x] Documentation update
 
 ## ✅ Checklist
-- [x] This PR does NOT add personal content
-- [x] This PR improves structure or clarity
-- [x] Changes are minimal and clean
-- [x] No unnecessary files added
-- [x] Follows repository concept
-
-## 💡 Notes
-Additional context if needed
+- [x] No unnecessary content added
+- [x] Keeps repository minimal
+- [x] Matches project concept
