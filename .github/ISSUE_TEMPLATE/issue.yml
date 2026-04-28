@@ -1,10 +1,41 @@
-name: Test
-description: test form
-title: "[TEST] "
+name: Task / Idea / Suggestion
+description: Add a task, plan, or suggestion
+title: "[TASK] "
 
 body:
-  - type: input
+  - type: textarea
     attributes:
-      label: Test Input
+      label: Content
+      description: Describe the task, plan, or idea
+      placeholder: What is this about?
     validations:
       required: true
+
+  - type: dropdown
+    attributes:
+      label: Type
+      options:
+        - Task
+        - Idea
+        - Suggestion
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Priority
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true
+
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: Relevant to this project
+          required: true
+        - label: Clear and simple
+          required: true
