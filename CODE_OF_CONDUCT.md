@@ -1,16 +1,13 @@
 # Code of Conduct
 
-## Purpose
-This repository exists to generate and organize issues.
+## Be respectful
+All feedback and discussions should be respectful.
 
-## Respect
-Be respectful in all interactions.
+## Stay relevant
+Keep discussions related to plans, ideas, or improvements.
 
-## Stay Focused
-Keep all contributions related to issue creation and structure.
-
-## Keep It Simple
-Avoid unnecessary complexity.
+## Keep it simple
+Avoid unnecessary complexity or unrelated content.
 
 ## Enforcement
 Content that does not follow these rules may be removed.
