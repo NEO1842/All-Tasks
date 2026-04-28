@@ -1,13 +1,23 @@
-# 🚀 All-Tasks
+# 🧩 All Tasks
 
-A simple and powerful task management repository for everyone.
+A simple and clean task management repository.
 
 ## ✨ Features
-- 📝 Easy task tracking
-- 📊 Progress visibility
-- 🤝 Open for contributions
+- Easy to use
+- Clean structure
+- Flexible for any project
 
-## 🚀 Getting Started
-1. Clone this repository
-```bash
-git clone https://github.com/NEO1842/All-Tasks.git
+## 🚀 Usage
+Just add your tasks and start organizing.
+
+## 📌 Example
+- [ ] Task 1
+- [ ] Task 2
+- [x] Done task
+
+## 🤝 Contributing
+Contributions are welcome!  
+Please read CONTRIBUTING.md before submitting a pull request.
+
+## 📄 License
+This project is licensed under the MIT License.
