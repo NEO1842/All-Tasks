@@ -1,8 +1,8 @@
 # Security Policy
 
-## Reporting a Vulnerability
+## Reporting Issues
 
-If you find a security issue, please open an issue.
+If you find a problem, create an issue.
 
 This repository contains no sensitive systems,
-but structural concerns are still welcome.
+but structural concerns are welcome.
