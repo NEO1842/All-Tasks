@@ -10,6 +10,8 @@ body:
         ## 💡 Suggestion
         Propose an improvement to the repository structure.
 
+        Keep it minimal, clear, and reusable.
+
   - type: textarea
     id: idea
     attributes:
@@ -24,7 +26,19 @@ body:
     attributes:
       label: Area
       description: Which part of the structure?
-      placeholder: e.g. README, Projects, Issues
+      placeholder: e.g. README / Projects / Issues
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this?
+      options:
+        - Low
+        - Medium
+        - High
     validations:
       required: true
 
