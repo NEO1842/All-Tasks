@@ -1,23 +1,27 @@
-# 🧩 All Tasks
+# 🗓 All-Tasks
 
-A simple and clean task management repository.
+A structured annual task and activity management template.
 
-## ✨ Features
-- Easy to use
-- Clean structure
-- Flexible for any project
+This repository is designed as a base structure for organizing:
+- Personal activities
+- Planned improvements
+- Task tracking over a year
+
+## 📌 Concept
+This is not a personal task list.
+
+It is a reusable structure for managing time, ideas, and progress.
+
+## 📂 Structure
+- Tasks are organized by time or category
+- Issues are used for tracking changes or ideas
+- Projects can be used for visual management
 
 ## 🚀 Usage
-Just add your tasks and start organizing.
+1. Clone or fork this repository
+2. Customize structure if needed
+3. Start adding tasks or plans
 
-## 📌 Example
-- [ ] Task 1
-- [ ] Task 2
-- [x] Done task
-
-## 🤝 Contributing
-Contributions are welcome!  
-Please read CONTRIBUTING.md before submitting a pull request.
-
-## 📄 License
-This project is licensed under the MIT License.
+## ⚠ Note
+This repository is intended as a template structure.
+Content is intentionally minimal.
