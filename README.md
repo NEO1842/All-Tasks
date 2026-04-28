@@ -1,20 +1,19 @@
 # 🗓 All-Tasks
 
-This repository is designed to generate issues.
+This repository shows what NEO1842 is planning and working on.
 
-All tasks, ideas, and plans should be created as issues  
-and managed through GitHub Projects.
+All tasks, ideas, and plans are created as issues  
+and organized through GitHub Projects.
 
-## 📌 Concept
-- Issues are the source of all tasks
-- Structure is simple and fast to use
-- Management happens in Projects, not here
+## 📌 About
+- This is a public activity and planning board
+- You can see what is planned and in progress
+- Suggestions and ideas are welcome
 
-## 🚀 Usage
-1. Create a new Issue
-2. Describe your task, idea, or change
-3. Manage it in GitHub Projects
+## 🚀 How it works
+1. Issues represent tasks, ideas, or plans
+2. GitHub Projects is used to manage progress
+3. Everything is kept simple and transparent
 
-## ⚠ Note
-This repository does not store detailed content.
-It exists only to create and organize issues.
+## 💬 Feedback
+If you have suggestions or ideas, feel free to open an issue.
