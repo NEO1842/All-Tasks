@@ -1,19 +1,13 @@
-# Contributing
+# Code of Conduct
 
-This repository is not intended for general public contributions.
+## Be respectful
+All interactions should be constructive and respectful.
 
-However, suggestions for improving the structure are welcome.
+## Stay on topic
+Keep discussions related to improving the repository structure.
 
-## What you can suggest
-- Structural improvements
-- Better organization ideas
-- Template enhancements
+## No spam or unrelated content
+Avoid unnecessary or irrelevant contributions.
 
-## What NOT to add
-- Personal task content
-- Random data unrelated to structure
-
-## How to contribute
-1. Open an issue
-2. Describe your idea clearly
-3. Keep it simple and structured
+## Enforcement
+Unacceptable behavior may result in removal of content.
