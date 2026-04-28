@@ -1,27 +1,20 @@
 # 🗓 All-Tasks
 
-A structured annual task and activity management template.
+This repository is designed to generate issues.
 
-This repository is designed as a base structure for organizing:
-- Personal activities
-- Planned improvements
-- Task tracking over a year
+All tasks, ideas, and plans should be created as issues  
+and managed through GitHub Projects.
 
 ## 📌 Concept
-This is not a personal task list.
-
-It is a reusable structure for managing time, ideas, and progress.
-
-## 📂 Structure
-- Tasks are organized by time or category
-- Issues are used for tracking changes or ideas
-- Projects can be used for visual management
+- Issues are the source of all tasks
+- Structure is simple and fast to use
+- Management happens in Projects, not here
 
 ## 🚀 Usage
-1. Clone or fork this repository
-2. Customize structure if needed
-3. Start adding tasks or plans
+1. Create a new Issue
+2. Describe your task, idea, or change
+3. Manage it in GitHub Projects
 
 ## ⚠ Note
-This repository is intended as a template structure.
-Content is intentionally minimal.
+This repository does not store detailed content.
+It exists only to create and organize issues.
