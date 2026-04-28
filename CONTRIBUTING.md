@@ -1,16 +1,16 @@
 # Contributing
 
-This repository is designed for issue-based task creation.
+This repository represents the plans and activities of NEO1842.
 
-## Allowed
-- Creating issues for tasks, ideas, or improvements
-- Suggesting better issue structure
+## You can
+- Suggest ideas or improvements
+- Give feedback on plans
 
-## Not Allowed
-- Adding unrelated files or content
-- Using the repository as a storage space
+## Please do not
+- Add unrelated content
+- Modify the structure unnecessarily
 
 ## How to contribute
-1. Create an issue
-2. Keep it simple and clear
-3. Let Projects handle management
+1. Open an issue
+2. Share your idea or suggestion
+3. Keep it simple and clear
