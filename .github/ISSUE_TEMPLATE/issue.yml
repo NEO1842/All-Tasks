@@ -1,8 +1,10 @@
+name: Test
+description: test form
+title: "[TEST] "
+
 body:
-- type: markdown
-  attributes:
-    value: "## Welcome!"
-- type: markdown
-  attributes:
-    value: |
-      Thanks for taking the time to fill out this bug! If you need real-time help, join us on Discord.
+  - type: input
+    attributes:
+      label: Test Input
+    validations:
+      required: true
