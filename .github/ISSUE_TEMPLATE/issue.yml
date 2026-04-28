@@ -1,0 +1,39 @@
+name: Task / Idea / Suggestion
+description: Add a task, plan, or suggestion
+title: "[TASK] "
+labels: ["task"]
+
+body:
+  - type: textarea
+    attributes:
+      label: Content
+      description: Describe the task, plan, or idea
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Type
+      options:
+        - Task
+        - Idea
+        - Suggestion
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Priority
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true
+
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: Relevant to this project
+          required: true
