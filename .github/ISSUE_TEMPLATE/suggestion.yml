@@ -1,6 +1,6 @@
-name: 💡 Suggestion
-description: Suggest an idea or improvement
-title: "1"
+name: Suggestion
+description: Suggest an idea
+title: " "
 labels: ["suggestion"]
 
 body:
@@ -8,7 +8,6 @@ body:
     id: summary
     attributes:
       label: Summary
-      description: What is your idea?
     validations:
       required: true
 
@@ -16,33 +15,5 @@ body:
     id: repository
     attributes:
       label: Repository
-      description: Enter repository name
-      placeholder: e.g. All-Tasks
     validations:
       required: true
-
-  - type: textarea
-    id: details
-    attributes:
-      label: Details
-    validations:
-      required: false
-
-  - type: dropdown
-    id: importance
-    attributes:
-      label: Importance
-      options:
-        - Low
-        - Medium
-        - High
-    validations:
-      required: true
-
-  - type: checkboxes
-    id: confirm
-    attributes:
-      label: Confirm
-      options:
-        - label: This is a suggestion
-          required: true
