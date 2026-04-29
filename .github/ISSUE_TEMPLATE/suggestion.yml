@@ -1,13 +1,13 @@
 name: Suggestion
 description: Suggest an idea
-title: "1"
+title: " "
 labels: ["suggestion"]
 
 body:
-  - type: input
-    id: summary
+  - type: textarea
+    id: idea
     attributes:
-      label: Summary
+      label: Idea
     validations:
       required: true
 
@@ -15,5 +15,16 @@ body:
     id: repository
     attributes:
       label: Repository
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Low
+        - Medium
+        - High
     validations:
       required: true
