@@ -1,70 +1,39 @@
 name: 💡 Suggestion
 description: Suggest an idea or improvement
-title: "( )"
+title: " "
 labels: ["suggestion"]
 
 body:
-  - type: markdown
+  - type: textarea
+    id: idea
     attributes:
-      value: |
-        ## 💡 Suggestion
-
-        Write your idea and select the repository.
-
-        🔗 View repositories:
-        https://github.com/NEO1842?tab=repositories
-
-  - type: input
-    id: summary
-    attributes:
-      label: Summary
-      description: Short title of your idea
+      label: Idea
     validations:
       required: true
 
-  - type: input
+  - type: dropdown
     id: repository
     attributes:
       label: Repository
-      description: Enter exact repository name
-      placeholder: e.g. All-Tasks
+      description: Select or type (copy from list below)
+      options:
+        - Copy & paste from list below
+        - Other
     validations:
       required: true
 
   - type: textarea
-    id: details
+    id: repo_input
     attributes:
-      label: Details
-      description: Explain your idea
-    validations:
-      required: false
-
-  - type: dropdown
-    id: type
-    attributes:
-      label: Type
-      options:
-        - Improvement
-        - Feature
-        - Idea
+      label: Repository Name
+      description: Paste exact repository name here
+      placeholder: All-Tasks
     validations:
       required: true
 
-  - type: dropdown
-    id: priority
+  - type: markdown
     attributes:
-      label: Priority
-      options:
-        - Low
-        - Medium
-        - High
-    validations:
-      required: true
-
-  - type: checkboxes
-    id: confirm
-    attributes:
-      label: Confirm
-      options:
-        - label: This is a suggestion (not personal schedule)
-          required: true
+      value: |
+        ## 📂 Your repositories (copy from here)
+        All-Tasks  
+        Chaos-Double-Pendulum-Simulator
