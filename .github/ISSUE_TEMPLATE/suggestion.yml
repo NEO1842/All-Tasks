@@ -1,13 +1,24 @@
-name: Suggestion
-description: Suggest an idea
-title: "A"
+name: 💡 Suggestion
+description: Suggest an idea or improvement
+title: " "
 labels: ["suggestion"]
 
 body:
-  - type: textarea
-    id: idea
+  - type: markdown
     attributes:
-      label: Idea
+      value: |
+        ## 💡 Suggestion
+
+        Write your idea and select the repository.
+
+        🔗 View repositories:
+        https://github.com/NEO1842?tab=repositories
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short title of your idea
     validations:
       required: true
 
@@ -15,6 +26,27 @@ body:
     id: repository
     attributes:
       label: Repository
+      description: Enter exact repository name
+      placeholder: e.g. All-Tasks
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Explain your idea
+    validations:
+      required: false
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Improvement
+        - Feature
+        - Idea
     validations:
       required: true
 
@@ -28,3 +60,11 @@ body:
         - High
     validations:
       required: true
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirm
+      options:
+        - label: This is a suggestion (not personal schedule)
+          required: true
