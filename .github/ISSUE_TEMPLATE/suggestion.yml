@@ -1,6 +1,6 @@
 name: 💡 Suggestion
 description: Suggest an idea or improvement
-title: " "
+title: "( )"
 labels: ["suggestion"]
 
 body:
