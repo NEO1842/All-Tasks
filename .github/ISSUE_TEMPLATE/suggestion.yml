@@ -1,0 +1,72 @@
+name: 💡 Suggestion
+description: Suggest an idea or improvement
+title: "[SUGGESTION] "
+labels: ["suggestion"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💡 Suggestion
+        Share your idea or improvement.
+
+        This is like sending a message.
+        Keep it simple and clear.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short one-line idea
+      placeholder: e.g. Add dark mode to portfolio
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Explain your idea
+      placeholder: What is your idea? Why is it useful?
+      value: |
+        - What:
+        - Why:
+        - How:
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What kind of suggestion is this?
+      options:
+        - Feature
+        - UI / Design
+        - Performance
+        - Idea
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      description: How important is this?
+      options:
+        - Low (nice to have)
+        - Medium (useful)
+        - High (important)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Checklist
+      options:
+        - label: This is a suggestion (not a task)
+          required: true
+        - label: Clear and simple
+          required: true
