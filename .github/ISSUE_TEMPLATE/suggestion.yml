@@ -1,34 +1,23 @@
 name: 💡 Suggestion
 description: Suggest an idea or improvement
-title: "[SUGGESTION] "
+title: ""
 labels: ["suggestion"]
 
 body:
-  - type: markdown
-    attributes:
-      value: |
-        ## 💡 Suggestion
-        Share your idea.
-
   - type: input
     id: summary
     attributes:
       label: Summary
       description: What is your idea?
-      placeholder: e.g. Add dark mode
     validations:
       required: true
 
-  - type: dropdown
-    id: repo
+  - type: input
+    id: repository
     attributes:
       label: Repository
-      description: Which repository is this for?
-      options:
-        - All-Tasks
-        - Portfolio
-        - Blender Works
-        - Other
+      description: Enter repository name
+      placeholder: e.g. All-Tasks
     validations:
       required: true
 
@@ -36,16 +25,11 @@ body:
     id: details
     attributes:
       label: Details
-      description: More info (optional)
-      placeholder: Explain if needed
-      value: |
-        - What:
-        - Why:
     validations:
       required: false
 
   - type: dropdown
-    id: impact
+    id: importance
     attributes:
       label: Importance
       options:
