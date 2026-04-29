@@ -3,11 +3,21 @@ description: Add a task, plan, or suggestion
 title: "[TASK] "
 
 body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🗓 Add a Task / Idea
+        Keep it simple. This is a public activity log.
+
   - type: textarea
     attributes:
       label: Content
       description: Describe the task, plan, or idea
-      placeholder: What is this about?
+      placeholder: e.g. Create Blender animation / Improve README
+      value: |
+        - What:
+        - When:
+        - Notes:
     validations:
       required: true
 
@@ -15,9 +25,9 @@ body:
     attributes:
       label: Type
       options:
-        - Task
-        - Idea
-        - Suggestion
+        - Task (planned work)
+        - Idea (future concept)
+        - Suggestion (feedback)
     validations:
       required: true
 
@@ -25,9 +35,9 @@ body:
     attributes:
       label: Priority
       options:
-        - Low
-        - Medium
-        - High
+        - Low (someday)
+        - Medium (planned)
+        - High (soon)
     validations:
       required: true
 
