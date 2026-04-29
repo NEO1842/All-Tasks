@@ -1,9 +1,16 @@
-name: 💡 Suggestion
-description: Suggest an idea or improvement
+name: Suggestion
+description: Suggest an idea
 title: " "
 labels: ["suggestion"]
 
 body:
+  - type: input
+    id: title_input
+    attributes:
+      label: Title
+    validations:
+      required: true
+
   - type: textarea
     id: idea
     attributes:
@@ -11,29 +18,9 @@ body:
     validations:
       required: true
 
-  - type: dropdown
+  - type: input
     id: repository
     attributes:
       label: Repository
-      description: Select or type (copy from list below)
-      options:
-        - Copy & paste from list below
-        - Other
     validations:
       required: true
-
-  - type: textarea
-    id: repo_input
-    attributes:
-      label: Repository Name
-      description: Paste exact repository name here
-      placeholder: All-Tasks
-    validations:
-      required: true
-
-  - type: markdown
-    attributes:
-      value: |
-        ## 📂 Your repositories (copy from here)
-        All-Tasks  
-        Chaos-Double-Pendulum-Simulator
