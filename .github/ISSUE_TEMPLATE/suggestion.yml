@@ -2,18 +2,12 @@ name: Suggestion
 description: Suggest an idea
 title: "Enter title here"
 labels: ["suggestion"]
+projects: ["NEO1842/4"]
 
 body:
   - type: textarea
     id: idea
     attributes:
       label: Idea
-    validations:
-      required: true
-
-  - type: input
-    id: repository
-    attributes:
-      label: Repository
     validations:
       required: true
