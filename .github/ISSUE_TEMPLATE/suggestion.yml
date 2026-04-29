@@ -1,16 +1,9 @@
 name: Suggestion
 description: Suggest an idea
-title: "S"
+title: "Enter title here"
 labels: ["suggestion"]
 
 body:
-  - type: input
-    id: title_input
-    attributes:
-      label: Title
-    validations:
-      required: true
-
   - type: textarea
     id: idea
     attributes:
