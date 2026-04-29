@@ -11,27 +11,35 @@ jobs:
   label:
     runs-on: ubuntu-latest
     steps:
-      - name: Create repo label
-        uses: actions/github-script@v7
+      - uses: actions/github-script@v7
         with:
           script: |
-            const body = context.payload.issue.body || "";
+            const issue = context.payload.issue;
+            const body = issue.body || "";
 
-            // Repository欄を抽出
+            // フォームの値はこの形式で入る
+            // ### Repository
+            // value
+
             const match = body.match(/### Repository\s*\n(.+)/);
-            if (!match) return;
+
+            if (!match) {
+              console.log("Repository not found");
+              return;
+            }
 
             let repo = match[1].trim();
 
-            // 小文字＋スペース→ハイフン
+            if (!repo) return;
+
+            // ラベル用に整形
             repo = repo.toLowerCase().replace(/\s+/g, "-");
 
             const label = `repo:${repo}`;
 
-            // ラベル付与
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
+              issue_number: issue.number,
               labels: [label]
             });
