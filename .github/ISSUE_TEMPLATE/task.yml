@@ -1,0 +1,30 @@
+name: 📋 Task
+description: General task or work item
+title: "[Task]: "
+labels: ["task", "triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 📋 Summary
+      description: What needs to be done?
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: 🧾 Details
+      description: Add more context if needed
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 🔥 Priority
+      options:
+        - Triage
+        - Critical
+        - High
+        - Medium
+        - Low
+        - Backlog
