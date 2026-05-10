@@ -21,7 +21,7 @@ jobs:
       - name: Install Nodemailer
         run: npm install nodemailer
 
-      - name: Send Test Mail
+      - name: Check Project Start Dates
         uses: actions/github-script@v7
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -31,6 +31,62 @@ jobs:
           script: |
             const nodemailer = require("nodemailer");
 
+            const today = new Date().toISOString().split('T')[0];
+
+            const query = `
+            query {
+              node(id: "PVT_kwHODIuak84BVv1F") {
+                ... on ProjectV2 {
+                  items(first: 100) {
+                    nodes {
+                      content {
+                        ... on Issue {
+                          title
+                          url
+                        }
+                      }
+                      fieldValues(first: 20) {
+                        nodes {
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            field {
+                              ... on ProjectV2FieldCommon {
+                                name
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }`;
+
+            const result = await github.graphql(query);
+
+            let matched = [];
+
+            for (const item of result.node.items.nodes) {
+              const issue = item.content;
+
+              if (!issue) continue;
+
+              for (const field of item.fieldValues.nodes) {
+                if (
+                  field.field?.name === "Start date" &&
+                  field.date === today
+                ) {
+                  matched.push(issue);
+                }
+              }
+            }
+
+            if (matched.length === 0) {
+              console.log("No issues starting today.");
+              return;
+            }
+
             const transporter = nodemailer.createTransport({
               service: "gmail",
               auth: {
@@ -39,11 +95,15 @@ jobs:
               }
             });
 
+            const body = matched
+              .map(issue => `• ${issue.title}\n${issue.url}`)
+              .join("\n\n");
+
             await transporter.sendMail({
               from: process.env.GMAIL_USER,
               to: process.env.GMAIL_USER,
-              subject: "✅ GitHub Actions Test",
-              text: "メール送信テスト成功！"
+              subject: "📅 今日開始のGitHub課題",
+              text: body
             });
 
             console.log("Mail sent!");
