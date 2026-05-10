@@ -1,0 +1,38 @@
+name: Project Start Mail
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Mail
+        uses: actions/github-script@v7
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const nodemailer = require("nodemailer");
+
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_PASS
+              }
+            });
+
+            await transporter.sendMail({
+              from: process.env.GMAIL_USER,
+              to: process.env.GMAIL_USER,
+              subject: "✅ GitHub Actions Test",
+              text: "メール送信テスト成功！"
+            });
+
+            console.log("Mail sent!");
