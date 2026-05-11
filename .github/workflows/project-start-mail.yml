@@ -2,179 +2,116 @@ name: Project Start Mail
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
-  notify:
+  send-project-mail:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
 
-      - name: Install Nodemailer
+      - name: Install dependencies
         run: npm install nodemailer
 
       - name: Check Project Start Dates
-        uses: actions/github-script@v8
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+        run: |
 
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          node <<'EOF'
 
-          script: |
+          const nodemailer = require("nodemailer");
 
-            const nodemailer = require("nodemailer");
+          const owner = "NEO1842";
+          const repo = "All-Tasks";
+
+          async function fetchIssues() {
+
+            const res = await fetch(
+              `https://api.github.com/repos/${owner}/${repo}/issues`,
+              {
+                headers: {
+                  Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+                  Accept: "application/vnd.github+json"
+                }
+              }
+            );
+
+            return await res.json();
+          }
+
+          function getLabel(issue, prefix, fallback) {
+
+            const label = issue.labels.find(l =>
+              l.name.toLowerCase().startsWith(prefix.toLowerCase())
+            );
+
+            return label ? label.name.replace(prefix, "").trim() : fallback;
+          }
+
+          async function main() {
+
+            const issues = await fetchIssues();
 
             const today = new Date().toISOString().split("T")[0];
 
-            const query = `
-            query {
-              node(id: "PVT_kwHODIuak84BVv1F") {
-                ... on ProjectV2 {
-
-                  items(first: 100) {
-                    nodes {
-
-                      content {
-                        ... on Issue {
-                          title
-                          url
-
-                          labels(first: 20) {
-                            nodes {
-                              name
-                            }
-                          }
-                        }
-                      }
-
-                      fieldValues(first: 30) {
-                        nodes {
-
-                          ... on ProjectV2ItemFieldDateValue {
-                            date
-                            field {
-                              ... on ProjectV2FieldCommon {
-                                name
-                              }
-                            }
-                          }
-
-                          ... on ProjectV2ItemFieldSingleSelectValue {
-                            name
-                            field {
-                              ... on ProjectV2FieldCommon {
-                                name
-                              }
-                            }
-                          }
-
-                        }
-                      }
-
-                    }
-                  }
-
-                }
-              }
-            }`;
-
-            const result = await github.graphql(query);
-
-            const activeIssues = [];
-            const completedIssues = [];
-
-            for (const item of result.node.items.nodes) {
-
-              const issue = item.content;
-
-              if (!issue) continue;
-
-              let startDate = null;
-              let status = "Unknown";
-              let progress = "Unknown";
-
-              for (const field of item.fieldValues.nodes) {
-
-                if (field.field?.name === "Start Date") {
-                  startDate = field.date;
-                }
-
-                if (field.field?.name === "Status") {
-                  status = field.name;
-                }
-
-                if (field.field?.name === "Progress") {
-                  progress = field.name;
-                }
-
-              }
-
-              if (startDate !== today) continue;
-
-              const labels = issue.labels.nodes.map(l => l.name);
-
-              const priority =
-                labels.find(label =>
-                  label.toLowerCase().includes("priority")
-                ) || "No Priority";
-
-              const data = {
-                title: issue.title,
-                url: issue.url,
-                status,
-                progress,
-                priority
-              };
-
-              if (
-                status.toLowerCase().includes("done") ||
-                status.toLowerCase().includes("complete") ||
-                status.toLowerCase().includes("completed")
-              ) {
-                completedIssues.push(data);
-              } else {
-                activeIssues.push(data);
-              }
-
-            }
-
-            if (
-              activeIssues.length === 0 &&
-              completedIssues.length === 0
-            ) {
-              console.log("No issues starting today.");
-              return;
-            }
-
-            const transporter = nodemailer.createTransport({
-              service: "gmail",
-              auth: {
-                user: process.env.GMAIL_USER,
-                pass: process.env.GMAIL_PASS
-              }
-            });
-
             let body = "";
 
-            body += "📅 今日開始のGitHub課題\n";
+            body += "📅 GitHub Project Daily Report\n";
             body += "====================================\n\n";
 
-            if (activeIssues.length > 0) {
+            const inProgressIssues = [];
+            const completedIssues = [];
 
-              body += "🚀 進行中のタスク\n";
+            for (const issue of issues) {
+
+              if (issue.pull_request) continue;
+
+              const status =
+                getLabel(issue, "status:", "No Status");
+
+              const progress =
+                getLabel(issue, "progress:", "0%");
+
+              const priority =
+                getLabel(issue, "priority:", "Normal");
+
+              const issueData = {
+                title: issue.title,
+                status,
+                progress,
+                priority,
+                url: issue.html_url
+              };
+
+              const isCompleted =
+                status.toLowerCase().includes("done") ||
+                status.toLowerCase().includes("complete") ||
+                status.toLowerCase().includes("completed");
+
+              if (isCompleted) {
+                completedIssues.push(issueData);
+              } else {
+                inProgressIssues.push(issueData);
+              }
+            }
+
+            if (inProgressIssues.length > 0) {
+
+              body += "🚀 進行中 / 未完了\n";
               body += "------------------------------------\n\n";
 
-              for (const issue of activeIssues) {
+              for (const issue of inProgressIssues) {
 
                 body += `📌 ${issue.title}
 
@@ -187,9 +124,7 @@ jobs:
 ━━━━━━━━━━━━━━━━━━━━
 
 `;
-
               }
-
             }
 
             if (completedIssues.length > 0) {
@@ -210,10 +145,24 @@ jobs:
 ━━━━━━━━━━━━━━━━━━━━
 
 `;
-
               }
-
             }
+
+            if (
+              inProgressIssues.length === 0 &&
+              completedIssues.length === 0
+            ) {
+
+              body += "No issues found.\n";
+            }
+
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_PASS
+              }
+            });
 
             await transporter.sendMail({
               from: process.env.GMAIL_USER,
@@ -223,3 +172,11 @@ jobs:
             });
 
             console.log("Mail sent successfully!");
+          }
+
+          main().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
+
+          EOF
