@@ -104,29 +104,31 @@ jobs:
                 ?.name.replace(prefix, "").trim()
               || "未設定";
 
-            const body = matched.map(issue => {
+           const body = matched.map(issue => {
 
-              const isDone = issue.state === "closed" ? "✅ 完了" : "⏳ 未完了";
+  const isDone = issue.state === "closed" ? "✅ 完了" : "⏳ 未完了";
 
-              const assignees =
-                issue.assignees?.nodes?.map(a => a.login).join(", ")
-                || "未設定";
+  const assignees =
+    issue.assignees?.nodes?.map(a => a.login).join(", ")
+    || "未設定";
 
-              const status = getLabel(issue, "status:");
-              const priority = getLabel(issue, "priority:");
+  const status = getLabel(issue, "status:");
+  const priority = getLabel(issue, "priority:");
 
-              return `📌 ${issue.title}
+  let text = "";
 
-${isDone}
+  text += `📌 ${issue.title}\n`;
+  text += `${isDone}\n\n`;
 
-👤 担当者 : ${assignees}
-🚦 進行状況 : ${status}
-🔥 優先順位 : ${priority}
+  text += `👤 担当者 : ${assignees}\n`;
+  text += `🚦 進行状況 : ${status}\n`;
+  text += `🔥 優先順位 : ${priority}\n\n`;
 
-🔗 ${issue.url}
-`;
+  text += `🔗 ${issue.url}\n`;
 
-            }).join("\n━━━━━━━━━━━━━━━━━━━━\n\n");
+  return text;
+
+}).join("\n━━━━━━━━━━━━━━━━━━━━\n\n");
 
             const transporter = nodemailer.createTransport({
               service: "gmail",
