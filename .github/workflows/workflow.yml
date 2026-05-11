@@ -1,4 +1,4 @@
-name: Project Start Mail
+name: Project Dashboard Mail
 
 on:
   schedule:
@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: npm install nodemailer
 
-      - name: Send Mail
+      - name: Send Dashboard Mail
         uses: actions/github-script@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,8 +31,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const nodemailer = require("nodemailer");
-
-            const token = process.env.GITHUB_TOKEN;
 
             const query = `
             query {
@@ -83,7 +81,14 @@ jobs:
               return "未設定";
             }
 
-            let matched = [];
+            function progressBar(value) {
+              const v = parseInt(value) || 0;
+              const clamped = Math.max(0, Math.min(v, 100));
+              const filled = Math.round(clamped / 10);
+              return "█".repeat(filled) + "░".repeat(10 - filled) + ` ${clamped}%`;
+            }
+
+            const tasks = [];
 
             for (const item of items) {
               const issue = item.content;
@@ -92,49 +97,108 @@ jobs:
               const startDate = getField(item, "Start Date");
 
               if (startDate === today) {
-                matched.push({ issue, item });
+                const status = getField(item, "Status");
+                const priority = getField(item, "Priority");
+                const progress = getField(item, "Sub-issues progress");
+
+                tasks.push({
+                  issue,
+                  status,
+                  priority,
+                  progress
+                });
               }
             }
 
-            if (matched.length === 0) {
-              console.log("No issues today.");
+            if (tasks.length === 0) {
+              console.log("No tasks today.");
               return;
             }
 
+            // 🏆 優先度ランキングソート
+            const priorityRank = {
+              "High": 3,
+              "Medium": 2,
+              "Low": 1
+            };
+
+            tasks.sort((a, b) =>
+              (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0)
+            );
+
             let html = `
-            <div style="font-family:Arial;background:#f6f7fb;padding:20px">
-              <div style="max-width:700px;margin:auto">
-                <h2 style="text-align:center">📅 今日開始タスク</h2>
+            <div style="font-family:Arial;background:#f4f6fb;padding:20px">
+              <div style="max-width:800px;margin:auto">
+                <h2 style="text-align:center">📊 タスクダッシュボード</h2>
+                <p style="text-align:center;color:#888">Start Date 本日分</p>
                 <hr />
             `;
 
-            for (const m of matched) {
-              const issue = m.issue;
-              const item = m.item;
-
-              const status = getField(item, "Status");
-              const priority = getField(item, "Priority");
-
+            for (const t of tasks) {
               const isDone =
-                issue.state === "closed" || status.toLowerCase().includes("done");
+                t.issue.state === "closed" || t.status.toLowerCase().includes("done");
+
+              const statusColor = isDone ? "#2ecc71" : "#f39c12";
+              const priorityColor =
+                t.priority === "High" ? "#e74c3c" :
+                t.priority === "Medium" ? "#f39c12" : "#2ecc71";
 
               html += `
-              <div style="background:#fff;padding:16px;margin:15px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1)">
-                <h3>📌 ${issue.title}</h3>
+              <div style="
+                background:#fff;
+                padding:16px;
+                margin:15px 0;
+                border-radius:12px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08)
+              ">
 
-                <p>${isDone ? "✅ 完了" : "⏳ 未完了"}</p>
+                <h3>📌 ${t.issue.title}</h3>
 
-                <p>🚦 ステータス : ${status}</p>
-                <p>🔥 優先度 : ${priority}</p>
+                <span style="
+                  background:${statusColor};
+                  color:#fff;
+                  padding:4px 10px;
+                  border-radius:20px;
+                  font-size:12px;
+                ">
+                  ${isDone ? "完了" : "未完了"}
+                </span>
 
-                <a href="${issue.url}" style="color:#3498db">🔗 開く</a>
+                <span style="
+                  margin-left:8px;
+                  background:${priorityColor};
+                  color:#fff;
+                  padding:4px 10px;
+                  border-radius:20px;
+                  font-size:12px;
+                ">
+                  ${t.priority}
+                </span>
+
+                <p style="margin-top:10px;">🚦 状態 : ${t.status}</p>
+
+                <p>📊 進捗 : ${progressBar(t.progress)}</p>
+
+                <a href="${t.issue.url}"
+                   style="
+                     display:inline-block;
+                     margin-top:10px;
+                     padding:8px 14px;
+                     background:#3498db;
+                     color:#fff;
+                     text-decoration:none;
+                     border-radius:6px;
+                   ">
+                  🔗 Issueを開く
+                </a>
+
               </div>
               `;
             }
 
             html += `
-              <p style="text-align:center;color:#999;font-size:12px">
-                GitHub Actions 自動メール
+              <p style="text-align:center;color:#aaa;font-size:12px">
+                GitHub Actions Auto Dashboard Mail
               </p>
               </div>
             </div>
@@ -151,8 +215,8 @@ jobs:
             await transporter.sendMail({
               from: process.env.GMAIL_USER,
               to: process.env.GMAIL_USER,
-              subject: `📅 今日開始タスク`,
+              subject: "📊 今日のタスクダッシュボード",
               html
             });
 
-            console.log("Mail sent!");
+            console.log("Dashboard mail sent!");
