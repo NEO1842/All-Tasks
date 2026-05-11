@@ -21,7 +21,7 @@ jobs:
       - name: Install Nodemailer
         run: npm install nodemailer
 
-      - name: Run Start Date Mail Script
+      - name: Send Start Date Mail
         uses: actions/github-script@v7
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -30,8 +30,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const nodemailer = require("nodemailer");
-
-            const token = process.env.GITHUB_TOKEN;
 
             const query = `
             query {
@@ -100,7 +98,11 @@ jobs:
               return;
             }
 
+            // ===== メール本文（UI強化）=====
             let body = "";
+
+            body += "📅 今日開始タスクレポート\n";
+            body += "====================================\n\n";
 
             for (const m of matched) {
               const issue = m.issue;
@@ -108,25 +110,22 @@ jobs:
 
               const status = getField(item, "Status");
               const priority = getField(item, "Priority");
-              const progress = getField(item, "Sub-issues progress");
 
               const isDone =
-                status.toLowerCase().includes("done") ||
-                progress.toLowerCase().includes("done") ||
-                issue.state === "closed"
+                issue.state === "closed" || status.toLowerCase().includes("done")
                   ? "✅ 完了"
                   : "⏳ 未完了";
 
-              body += `📌 ${issue.title}\n`;
-              body += `${isDone}\n\n`;
-
-              body += `🚦 Status : ${status}\n`;
-              body += `🔥 Priority : ${priority}\n`;
-              body += `📊 Progress : ${progress}\n\n`;
-
-              body += `🔗 ${issue.url}\n`;
-              body += "━━━━━━━━━━━━━━━━━━━━\n\n";
+              body += "────────────────────────────\n";
+              body += `📌 タイトル : ${issue.title}\n`;
+              body += `状態       : ${isDone}\n`;
+              body += `ステータス : ${status}\n`;
+              body += `優先度     : ${priority}\n`;
+              body += `リンク     : ${issue.url}\n`;
+              body += "────────────────────────────\n\n";
             }
+
+            body += "\n📊 このメールはGitHub Actionsで自動生成されています\n";
 
             const transporter = nodemailer.createTransport({
               service: "gmail",
@@ -139,8 +138,8 @@ jobs:
             await transporter.sendMail({
               from: process.env.GMAIL_USER,
               to: process.env.GMAIL_USER,
-              subject: `📅 Start Date Tasks (${today})`,
+              subject: `📅 今日開始タスク (${today})`,
               text: body
             });
 
-            console.log("Mail sent successfully!");
+            console.log("Mail sent!");
