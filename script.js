@@ -1,36 +1,84 @@
 const nodemailer = require("nodemailer");
 
+const token = process.env.GITHUB_TOKEN;
 const owner = "NEO1842";
 const repo = "All-Tasks";
 
-async function fetchIssues() {
-  const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/issues`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-        Accept: "application/vnd.github+json"
+// ─────────────────────────────
+// GraphQLでProjects V2取得
+// ─────────────────────────────
+const query = `
+query {
+  repository(owner: "${owner}", name: "${repo}") {
+    issues(first: 100, states: OPEN) {
+      nodes {
+        title
+        url
+        state
+        assignees(first: 10) {
+          nodes { login }
+        }
+        labels(first: 20) {
+          nodes { name }
+        }
+        projectItems(first: 10) {
+          nodes {
+            fieldValues(first: 20) {
+              nodes {
+                ... on ProjectV2ItemFieldDateValue {
+                  date
+                  field {
+                    ... on ProjectV2FieldCommon {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
-  );
+  }
+}
+`;
 
-  return await res.json();
+async function fetchData() {
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ query })
+  });
+
+  const json = await res.json();
+  return json.data.repository.issues.nodes;
 }
 
-// 🗓 Start Date（ラベル方式に完全統一）
+// ─────────────────────────────
+// Start Date取得（ここが本体）
+// ─────────────────────────────
 function getStartDate(issue) {
-  const label = issue.labels.find(l =>
-    l.name.toLowerCase().startsWith("start:")
-  );
-
-  return label
-    ? label.name.replace("start:", "").trim()
-    : null;
+  for (const item of issue.projectItems.nodes) {
+    for (const field of item.fieldValues.nodes) {
+      if (
+        field.date &&
+        field.field?.name?.toLowerCase().includes("start")
+      ) {
+        return field.date;
+      }
+    }
+  }
+  return null;
 }
 
+// ─────────────────────────────
 // ラベル取得
+// ─────────────────────────────
 function getLabel(issue, prefix, fallback) {
-  const label = issue.labels.find(l =>
+  const label = issue.labels.nodes.find(l =>
     l.name.toLowerCase().startsWith(prefix.toLowerCase())
   );
 
@@ -39,17 +87,18 @@ function getLabel(issue, prefix, fallback) {
     : fallback;
 }
 
+// ─────────────────────────────
+// メイン処理
+// ─────────────────────────────
 async function main() {
-  const issues = await fetchIssues();
+  const issues = await fetchData();
 
   const today = new Date().toISOString().split("T")[0];
 
-  // 🎯 Start Dateが今日だけ
+  // 🎯 Start Dateが今日
   const todayIssues = issues.filter(issue => {
-    if (issue.pull_request) return false;
-
-    const startDate = getStartDate(issue);
-    return startDate === today;
+    const start = getStartDate(issue);
+    return start === today;
   });
 
   let body = "";
@@ -63,18 +112,16 @@ async function main() {
 
   for (const issue of todayIssues) {
     const status = getLabel(issue, "status:", "No Status");
-    const progress = getLabel(issue, "progress:", "0%");
     const priority = getLabel(issue, "priority:", "Normal");
 
     const assignees =
-      issue.assignees?.map(a => a.login).join(", ") || "未設定";
+      issue.assignees.nodes.map(a => a.login).join(", ") || "未設定";
 
     body += `📌 ${issue.title}\n\n`;
     body += `👤 担当者 : ${assignees}\n`;
     body += `🚦 進行状況 : ${status}\n`;
-    body += `📊 進捗 : ${progress}\n`;
     body += `🔥 優先順位 : ${priority}\n\n`;
-    body += `🔗 ${issue.html_url}\n\n`;
+    body += `🔗 ${issue.url}\n\n`;
     body += "━━━━━━━━━━━━━━━━━━━━\n\n";
   }
 
@@ -93,7 +140,7 @@ async function main() {
     text: body
   });
 
-  console.log("Mail sent successfully!");
+  console.log("Mail sent!");
 }
 
 main().catch(console.error);
