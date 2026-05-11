@@ -17,6 +17,30 @@ async function fetchIssues() {
   return await res.json();
 }
 
+// 🗓 開始日取得（ラベル or fallback）
+function getStartDate(issue) {
+  // ① ラベル方式: start:2026-05-11
+  const label = issue.labels.find(l =>
+    l.name.toLowerCase().startsWith("start:")
+  );
+
+  if (label) {
+    return label.name.replace("start:", "").trim();
+  }
+
+  // ② Projects系（custom fieldっぽい名前対応）
+  const startField = issue.labels.find(l =>
+    l.name.toLowerCase().startsWith("開始日:")
+  );
+
+  if (startField) {
+    return startField.name.replace("開始日:", "").trim();
+  }
+
+  return null;
+}
+
+// ステータス取得
 function getLabel(issue, prefix, fallback) {
   const label = issue.labels.find(l =>
     l.name.toLowerCase().startsWith(prefix.toLowerCase())
@@ -32,22 +56,28 @@ async function main() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // 🎯 今日作成されたIssueだけ
-  const todayIssues = issues.filter(
-    issue =>
-      !issue.pull_request &&
-      issue.created_at.startsWith(today)
-  );
+  // 🎯 開始日一致のみ抽出
+  const startTodayIssues = issues.filter(issue => {
+    if (issue.pull_request) return false;
+
+    const startDate = getStartDate(issue);
+
+    return startDate === today;
+  });
 
   let body = "";
 
-  body += "📅 Daily Issue Report\n";
+  body += "📅 Start Day Issue Report\n";
   body += "====================================\n\n";
+
+  if (startTodayIssues.length === 0) {
+    body += "📭 今日開始の課題はありません。\n";
+  }
 
   const openIssues = [];
   const closedIssues = [];
 
-  for (const issue of todayIssues) {
+  for (const issue of startTodayIssues) {
     const status = getLabel(issue, "status:", "No Status");
     const progress = getLabel(issue, "progress:", "0%");
     const priority = getLabel(issue, "priority:", "Normal");
@@ -68,9 +98,9 @@ async function main() {
     }
   }
 
-  // 🚀 未完了
+  // 🚀 進行中
   if (openIssues.length > 0) {
-    body += "🚀 進行中 / 未完了\n";
+    body += "🚀 開始（進行中）\n";
     body += "------------------------------------\n\n";
 
     for (const issue of openIssues) {
@@ -98,10 +128,6 @@ async function main() {
     }
   }
 
-  if (todayIssues.length === 0) {
-    body += "📭 Today has no issues.\n";
-  }
-
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -113,7 +139,7 @@ async function main() {
   await transporter.sendMail({
     from: process.env.GMAIL_USER,
     to: process.env.GMAIL_USER,
-    subject: `📅 Daily Report (${today})`,
+    subject: `📅 Start Day Report (${today})`,
     text: body
   });
 
