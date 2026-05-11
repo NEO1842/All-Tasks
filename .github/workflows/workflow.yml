@@ -1,4 +1,4 @@
-name: Task Schedule Dashboard
+name: Project Dashboard Mail
 
 on:
   schedule:
@@ -18,10 +18,10 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install Nodemailer
         run: npm install nodemailer
 
-      - name: Send Date Dashboard Mail
+      - name: Send Dashboard Mail
         uses: actions/github-script@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -43,6 +43,9 @@ jobs:
                           title
                           url
                           state
+                          labels(first: 20) {
+                            nodes { name }
+                          }
                         }
                       }
                       fieldValues(first: 30) {
@@ -70,6 +73,8 @@ jobs:
             const res = await github.graphql(query);
             const items = res.node.items.nodes;
 
+            const today = new Date().toISOString().split("T")[0];
+
             function getField(item, name) {
               for (const f of item.fieldValues.nodes) {
                 if (f.field?.name === name) {
@@ -77,6 +82,12 @@ jobs:
                 }
               }
               return "未設定";
+            }
+
+            function getLabels(issue) {
+              const labels = issue.labels?.nodes || [];
+              if (labels.length === 0) return "未設定";
+              return labels.map(l => `🏷️ ${l.name}`).join("  ");
             }
 
             const matched = [];
@@ -87,11 +98,11 @@ jobs:
 
               const startDate = getField(item, "Start Date");
 
-              if (startDate === new Date().toISOString().split("T")[0]) {
+              if (startDate === today) {
                 matched.push({
                   issue,
                   startDate,
-                  targetdate: getField(item, "Target Date"),
+                  targetDate: getField(item, "Target Date"),
                   status: getField(item, "Status"),
                   priority: getField(item, "Priority")
                 });
@@ -106,13 +117,14 @@ jobs:
             let html = `
             <div style="font-family:Arial;background:#f6f7fb;padding:20px">
               <div style="max-width:700px;margin:auto">
-                <h2 style="text-align:center">📅 タスク日程ダッシュボード</h2>
+                <h2 style="text-align:center">📅 Task Dashboard</h2>
                 <hr />
             `;
 
             for (const t of matched) {
               const isDone =
-                t.issue.state === "closed" || t.status.toLowerCase().includes("done");
+                t.issue.state === "closed" ||
+                t.status.toLowerCase().includes("done");
 
               html += `
               <div style="
@@ -128,10 +140,12 @@ jobs:
                 <p>${isDone ? "✅ 完了" : "⏳ 未完了"}</p>
 
                 <p>📅 開始日 : ${t.startDate}</p>
-                <p>🎯 目標日 : ${t.targetdate}</p>
+                <p>🎯 目標日 : ${t.targetDate}</p>
 
                 <p>🚦 ステータス : ${t.status}</p>
                 <p>🔥 優先度 : ${t.priority}</p>
+
+                <p>${getLabels(t.issue)}</p>
 
                 <a href="${t.issue.url}"
                    style="
@@ -152,7 +166,7 @@ jobs:
 
             html += `
               <p style="text-align:center;color:#999;font-size:12px">
-                GitHub Actions 自動レポート
+                GitHub Actions Auto Dashboard
               </p>
               </div>
             </div>
@@ -169,9 +183,8 @@ jobs:
             await transporter.sendMail({
               from: process.env.GMAIL_USER,
               to: process.env.GMAIL_USER,
-              subject: "📅 タスク日程ダッシュボード",
+              subject: "📅 Task Dashboard Report",
               html
             });
 
             console.log("Mail sent!");
-            
