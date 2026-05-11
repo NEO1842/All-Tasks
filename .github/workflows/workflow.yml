@@ -1,170 +1,158 @@
-const nodemailer = require("nodemailer");
+name: Project Start Mail
 
-const token = process.env.GITHUB_TOKEN;
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
-const query = `
-query {
-  node(id: "PVT_kwHODIuak84BVv1F") {
-    ... on ProjectV2 {
-      items(first: 100) {
-        nodes {
-          content {
-            ... on Issue {
-              title
-              url
-              state
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install nodemailer
+
+      - name: Send Mail
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const nodemailer = require("nodemailer");
+
+            const token = process.env.GITHUB_TOKEN;
+
+            const query = `
+            query {
+              node(id: "PVT_kwHODIuak84BVv1F") {
+                ... on ProjectV2 {
+                  items(first: 100) {
+                    nodes {
+                      content {
+                        ... on Issue {
+                          title
+                          url
+                          state
+                        }
+                      }
+                      fieldValues(first: 30) {
+                        nodes {
+                          ... on ProjectV2ItemFieldTextValue {
+                            text
+                            field { ... on ProjectV2FieldCommon { name } }
+                          }
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            field { ... on ProjectV2FieldCommon { name } }
+                          }
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                            field { ... on ProjectV2FieldCommon { name } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }`;
+
+            const res = await github.graphql(query);
+            const items = res.node.items.nodes;
+
+            const today = new Date().toISOString().split("T")[0];
+
+            function getField(item, name) {
+              for (const f of item.fieldValues.nodes) {
+                if (f.field?.name === name) {
+                  return f.text || f.date || f.name || "未設定";
+                }
+              }
+              return "未設定";
             }
-          }
-          fieldValues(first: 30) {
-            nodes {
-              ... on ProjectV2ItemFieldTextValue {
-                text
-                field { ... on ProjectV2FieldCommon { name } }
-              }
-              ... on ProjectV2ItemFieldDateValue {
-                date
-                field { ... on ProjectV2FieldCommon { name } }
-              }
-              ... on ProjectV2ItemFieldSingleSelectValue {
-                name
-                field { ... on ProjectV2FieldCommon { name } }
+
+            let matched = [];
+
+            for (const item of items) {
+              const issue = item.content;
+              if (!issue) continue;
+
+              const startDate = getField(item, "Start Date");
+
+              if (startDate === today) {
+                matched.push({ issue, item });
               }
             }
-          }
-        }
-      }
-    }
-  }
-}
-`;
 
-async function main() {
-  const res = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ query })
-  });
+            if (matched.length === 0) {
+              console.log("No issues today.");
+              return;
+            }
 
-  const json = await res.json();
-  const items = json.data.node.items.nodes;
+            let html = `
+            <div style="font-family:Arial;background:#f6f7fb;padding:20px">
+              <div style="max-width:700px;margin:auto">
+                <h2 style="text-align:center">📅 今日開始タスク</h2>
+                <hr />
+            `;
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
+            for (const m of matched) {
+              const issue = m.issue;
+              const item = m.item;
 
-  const formatDate = (d) => d ? d.split("T")[0] : null;
+              const status = getField(item, "Status");
+              const priority = getField(item, "Priority");
 
-  function getField(item, name) {
-    for (const f of item.fieldValues.nodes) {
-      if (f.field?.name === name) {
-        return f.text || f.date || f.name || "未設定";
-      }
-    }
-    return "未設定";
-  }
+              const isDone =
+                issue.state === "closed" || status.toLowerCase().includes("done");
 
-  function getDueAlert(dueDate) {
-    if (!dueDate || dueDate === "未設定") return null;
+              html += `
+              <div style="background:#fff;padding:16px;margin:15px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1)">
+                <h3>📌 ${issue.title}</h3>
 
-    const d = new Date(dueDate);
-    d.setHours(0,0,0,0);
+                <p>${isDone ? "✅ 完了" : "⏳ 未完了"}</p>
 
-    const diff = (d - today) / (1000 * 60 * 60 * 24);
+                <p>🚦 ステータス : ${status}</p>
+                <p>🔥 優先度 : ${priority}</p>
 
-    if (diff < 0) return "🚨 期限超過";
-    if (diff === 0) return "🔥 今日締切";
-    if (diff === 1) return "⚠️ 明日締切";
-    return null;
-  }
+                <a href="${issue.url}" style="color:#3498db">🔗 開く</a>
+              </div>
+              `;
+            }
 
-  let matched = [];
+            html += `
+              <p style="text-align:center;color:#999;font-size:12px">
+                GitHub Actions 自動メール
+              </p>
+              </div>
+            </div>
+            `;
 
-  for (const item of items) {
-    const issue = item.content;
-    if (!issue) continue;
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_PASS
+              }
+            });
 
-    const startDate = getField(item, "Start Date");
-    const dueDate = getField(item, "Due Date");
+            await transporter.sendMail({
+              from: process.env.GMAIL_USER,
+              to: process.env.GMAIL_USER,
+              subject: `📅 今日開始タスク`,
+              html
+            });
 
-    if (formatDate(startDate) === new Date().toISOString().split("T")[0]) {
-      matched.push({ issue, item, dueDate });
-    }
-  }
-
-  if (matched.length === 0) {
-    console.log("No issues today.");
-    return;
-  }
-
-  // ===== HTMLメール =====
-  let html = `
-  <div style="font-family:Arial;background:#f6f7fb;padding:20px">
-    <div style="max-width:700px;margin:auto">
-      <h2 style="text-align:center">📅 タスクレポート</h2>
-      <hr />
-  `;
-
-  for (const m of matched) {
-    const issue = m.issue;
-    const item = m.item;
-
-    const status = getField(item, "Status");
-    const priority = getField(item, "Priority");
-    const dueDate = m.dueDate;
-
-    const isDone =
-      issue.state === "closed" || status.toLowerCase().includes("done");
-
-    const alert = getDueAlert(dueDate);
-
-    const statusColor = isDone ? "#2ecc71" : "#f39c12";
-
-    html += `
-    <div style="background:#fff;padding:16px;margin:15px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1)">
-
-      <h3 style="margin:0 0 10px 0">📌 ${issue.title}</h3>
-
-      <span style="padding:4px 10px;border-radius:20px;background:${statusColor};color:#fff;font-size:12px">
-        ${isDone ? "完了" : "未完了"}
-      </span>
-
-      <p>🚦 ステータス : ${status}</p>
-      <p>🔥 優先度 : ${priority}</p>
-
-      ${alert ? `<p style="color:red;font-weight:bold">⚠️ ${alert}</p>` : ""}
-      ${dueDate !== "未設定" ? `<p>📅 締切 : ${dueDate}</p>` : ""}
-
-      <a href="${issue.url}" style="color:#3498db">🔗 開く</a>
-    </div>
-    `;
-  }
-
-  html += `
-    <p style="text-align:center;color:#999;font-size:12px">
-      GitHub Actions 自動レポート
-    </p>
-    </div>
-  </div>
-  `;
-
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASS
-    }
-  });
-
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
-    to: process.env.GMAIL_USER,
-    subject: `📅 今日のタスクレポート`,
-    html
-  });
-
-  console.log("Mail sent!");
-}
-
-main().catch(console.error);
+            console.log("Mail sent!");
