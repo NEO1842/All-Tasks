@@ -1,144 +1,146 @@
-const nodemailer = require("nodemailer");
+name: Project Start Mail
 
-const token = process.env.GITHUB_TOKEN;
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
-const query = `
-query {
-  node(id: "PVT_kwHODIuak84BVv1F") {
-    ... on ProjectV2 {
-      items(first: 100) {
-        nodes {
-          content {
-            ... on Issue {
-              title
-              url
-              state
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Nodemailer
+        run: npm install nodemailer
+
+      - name: Run Start Date Mail Script
+        uses: actions/github-script@v7
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const nodemailer = require("nodemailer");
+
+            const token = process.env.GITHUB_TOKEN;
+
+            const query = `
+            query {
+              node(id: "PVT_kwHODIuak84BVv1F") {
+                ... on ProjectV2 {
+                  items(first: 100) {
+                    nodes {
+                      content {
+                        ... on Issue {
+                          title
+                          url
+                          state
+                        }
+                      }
+                      fieldValues(first: 30) {
+                        nodes {
+                          ... on ProjectV2ItemFieldTextValue {
+                            text
+                            field { ... on ProjectV2FieldCommon { name } }
+                          }
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            field { ... on ProjectV2FieldCommon { name } }
+                          }
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                            field { ... on ProjectV2FieldCommon { name } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }`;
+
+            const res = await github.graphql(query);
+            const items = res.node.items.nodes;
+
+            const today = new Date().toISOString().split("T")[0];
+
+            const getField = (item, fieldName) => {
+              for (const f of item.fieldValues.nodes) {
+                if (f.field?.name === fieldName) {
+                  return f.text || f.date || f.name || "未設定";
+                }
+              }
+              return "未設定";
+            };
+
+            let matched = [];
+
+            for (const item of items) {
+              const issue = item.content;
+              if (!issue) continue;
+
+              const startDate = getField(item, "Start Date");
+
+              if (startDate === today) {
+                matched.push({ issue, item });
+              }
             }
-          }
-          fieldValues(first: 30) {
-            nodes {
-              ... on ProjectV2ItemFieldTextValue {
-                text
-                field {
-                  ... on ProjectV2FieldCommon {
-                    name
-                  }
-                }
-              }
-              ... on ProjectV2ItemFieldDateValue {
-                date
-                field {
-                  ... on ProjectV2FieldCommon {
-                    name
-                  }
-                }
-              }
-              ... on ProjectV2ItemFieldSingleSelectValue {
-                name
-                field {
-                  ... on ProjectV2FieldCommon {
-                    name
-                  }
-                }
-              }
+
+            if (matched.length === 0) {
+              console.log("No issues today.");
+              return;
             }
-          }
-        }
-      }
-    }
-  }
-}
-`;
 
-async function main() {
-  const res = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ query })
-  });
+            let body = "";
 
-  const json = await res.json();
-  const items = json.data.node.items.nodes;
+            for (const m of matched) {
+              const issue = m.issue;
+              const item = m.item;
 
-  const today = new Date().toISOString().split("T")[0];
+              const status = getField(item, "Status");
+              const priority = getField(item, "Priority");
+              const progress = getField(item, "Sub-issues progress");
 
-  let matched = [];
+              const isDone =
+                status.toLowerCase().includes("done") ||
+                progress.toLowerCase().includes("done") ||
+                issue.state === "closed"
+                  ? "✅ 完了"
+                  : "⏳ 未完了";
 
-  function getField(item, fieldName) {
-    for (const f of item.fieldValues.nodes) {
-      if (f.field?.name === fieldName) {
-        return f.text || f.date || f.name || "未設定";
-      }
-    }
-    return "未設定";
-  }
+              body += `📌 ${issue.title}\n`;
+              body += `${isDone}\n\n`;
 
-  for (const item of items) {
-    const issue = item.content;
-    if (!issue) continue;
+              body += `🚦 Status : ${status}\n`;
+              body += `🔥 Priority : ${priority}\n`;
+              body += `📊 Progress : ${progress}\n\n`;
 
-    const startDate = getField(item, "Start Date");
+              body += `🔗 ${issue.url}\n`;
+              body += "━━━━━━━━━━━━━━━━━━━━\n\n";
+            }
 
-    if (startDate === today) {
-      matched.push({
-        issue,
-        item
-      });
-    }
-  }
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_PASS
+              }
+            });
 
-  if (matched.length === 0) {
-    console.log("No issues today.");
-    return;
-  }
+            await transporter.sendMail({
+              from: process.env.GMAIL_USER,
+              to: process.env.GMAIL_USER,
+              subject: `📅 Start Date Tasks (${today})`,
+              text: body
+            });
 
-  let body = "";
-
-  for (const m of matched) {
-    const issue = m.issue;
-    const item = m.item;
-
-    const status = getField(item, "Status");
-    const priority = getField(item, "Priority");
-    const progress = getField(item, "Sub-issues progress");
-
-    const isDone =
-      status.toLowerCase().includes("done") ||
-      progress.toLowerCase().includes("done") ||
-      issue.state === "closed"
-        ? "✅ 完了"
-        : "⏳ 未完了";
-
-    body += `📌 ${issue.title}\n`;
-    body += `${isDone}\n\n`;
-
-    body += `🚦 Status : ${status}\n`;
-    body += `🔥 Priority : ${priority}\n`;
-    body += `📊 Progress : ${progress}\n\n`;
-
-    body += `🔗 ${issue.url}\n`;
-    body += "━━━━━━━━━━━━━━━━━━━━\n\n";
-  }
-
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASS
-    }
-  });
-
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
-    to: process.env.GMAIL_USER,
-    subject: `📅 Start Date Tasks`,
-    text: body
-  });
-
-  console.log("Mail sent!");
-}
-
-main().catch(console.error);
+            console.log("Mail sent successfully!");
