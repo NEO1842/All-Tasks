@@ -32,46 +32,48 @@ async function main() {
 
   const today = new Date().toISOString().split("T")[0];
 
+  // 🎯 今日作成されたIssueだけ
+  const todayIssues = issues.filter(
+    issue =>
+      !issue.pull_request &&
+      issue.created_at.startsWith(today)
+  );
+
   let body = "";
 
-  body += "📅 GitHub Project Daily Report\n";
+  body += "📅 Daily Issue Report\n";
   body += "====================================\n\n";
 
-  const inProgressIssues = [];
-  const completedIssues = [];
+  const openIssues = [];
+  const closedIssues = [];
 
-  for (const issue of issues) {
-    if (issue.pull_request) continue;
-
+  for (const issue of todayIssues) {
     const status = getLabel(issue, "status:", "No Status");
     const progress = getLabel(issue, "progress:", "0%");
     const priority = getLabel(issue, "priority:", "Normal");
 
-    const issueData = {
+    const data = {
       title: issue.title,
       status,
       progress,
       priority,
-      url: issue.html_url
+      url: issue.html_url,
+      state: issue.state
     };
 
-    const isCompleted =
-      status.toLowerCase().includes("done") ||
-      status.toLowerCase().includes("complete") ||
-      status.toLowerCase().includes("completed");
-
-    if (isCompleted) {
-      completedIssues.push(issueData);
+    if (issue.state === "closed") {
+      closedIssues.push(data);
     } else {
-      inProgressIssues.push(issueData);
+      openIssues.push(data);
     }
   }
 
-  if (inProgressIssues.length > 0) {
+  // 🚀 未完了
+  if (openIssues.length > 0) {
     body += "🚀 進行中 / 未完了\n";
     body += "------------------------------------\n\n";
 
-    for (const issue of inProgressIssues) {
+    for (const issue of openIssues) {
       body += `📌 ${issue.title}\n\n`;
       body += `🚦 Status   : ${issue.status}\n`;
       body += `📊 Progress : ${issue.progress}\n`;
@@ -81,11 +83,12 @@ async function main() {
     }
   }
 
-  if (completedIssues.length > 0) {
+  // ✅ 完了
+  if (closedIssues.length > 0) {
     body += "\n✅ 完了済み\n";
     body += "------------------------------------\n\n";
 
-    for (const issue of completedIssues) {
+    for (const issue of closedIssues) {
       body += `✔ ${issue.title}\n\n`;
       body += `🚦 Status   : ${issue.status}\n`;
       body += `📊 Progress : ${issue.progress}\n`;
@@ -93,6 +96,10 @@ async function main() {
       body += `🔗 ${issue.url}\n\n`;
       body += "━━━━━━━━━━━━━━━━━━━━\n\n";
     }
+  }
+
+  if (todayIssues.length === 0) {
+    body += "📭 Today has no issues.\n";
   }
 
   const transporter = nodemailer.createTransport({
@@ -106,7 +113,7 @@ async function main() {
   await transporter.sendMail({
     from: process.env.GMAIL_USER,
     to: process.env.GMAIL_USER,
-    subject: `📅 GitHub Project Daily Report (${today})`,
+    subject: `📅 Daily Report (${today})`,
     text: body
   });
 
