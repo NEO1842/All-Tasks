@@ -2,11 +2,11 @@ name: Project Start Mail
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
-  send-project-mail:
+  notify:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,12 +18,97 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install Nodemailer
         run: npm install nodemailer
 
-      - name: Run script
+      - name: Check Project Start Dates
+        uses: actions/github-script@v7
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
-        run: node script.js
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const nodemailer = require("nodemailer");
+
+            const today = new Date().toISOString().split('T')[0];
+
+            const query = `
+            query {
+              node(id: "PVT_kwHODIuak84BVv1F") {
+                ... on ProjectV2 {
+                  items(first: 100) {
+                    nodes {
+                      content {
+                        ... on Issue {
+                          title
+                          url
+                        }
+                      }
+                      fieldValues(first: 20) {
+                        nodes {
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            field {
+                              ... on ProjectV2FieldCommon {
+                                name
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }`;
+
+            const result = await github.graphql(query);
+
+            let matched = [];
+
+            for (const item of result.node.items.nodes) {
+              const issue = item.content;
+              if (!issue) continue;
+
+              for (const field of item.fieldValues.nodes) {
+
+                const fieldName = field.field?.name;
+
+                // ✅ Start Date判定（ここ重要）
+                if (fieldName === "Start Date") {
+
+                  const date = field.date?.split("T")[0];
+
+                  if (date === today) {
+                    matched.push(issue);
+                  }
+                }
+              }
+            }
+
+            if (matched.length === 0) {
+              console.log("No issues starting today.");
+              return;
+            }
+
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_PASS
+              }
+            });
+
+            const body = matched
+              .map(issue => `• ${issue.title}\n${issue.url}`)
+              .join("\n\n");
+
+            await transporter.sendMail({
+              from: process.env.GMAIL_USER,
+              to: process.env.GMAIL_USER,
+              subject: "📅 今日開始のGitHub課題",
+              text: body
+            });
+
+            console.log("Mail sent!");
