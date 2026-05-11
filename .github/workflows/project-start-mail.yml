@@ -74,7 +74,7 @@ jobs:
 
               for (const field of item.fieldValues.nodes) {
                 if (
-                  field.field?.name === "Start date" &&
+                  field.field?.name === "Start Date" &&
                   field.date === today
                 ) {
                   matched.push(issue);
