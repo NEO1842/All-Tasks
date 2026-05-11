@@ -91,7 +91,7 @@ jobs:
                 matched.push({
                   issue,
                   startDate,
-                  dueDate: getField(item, "Due Date"),
+                  targetdate: getField(item, "Target Date"),
                   status: getField(item, "Status"),
                   priority: getField(item, "Priority")
                 });
@@ -128,7 +128,7 @@ jobs:
                 <p>${isDone ? "✅ 完了" : "⏳ 未完了"}</p>
 
                 <p>📅 開始日 : ${t.startDate}</p>
-                <p>🎯 目標日 : ${t.dueDate}</p>
+                <p>🎯 目標日 : ${t.targetdate}</p>
 
                 <p>🚦 ステータス : ${t.status}</p>
                 <p>🔥 優先度 : ${t.priority}</p>
