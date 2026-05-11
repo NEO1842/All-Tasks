@@ -31,7 +31,7 @@ jobs:
           script: |
             const nodemailer = require("nodemailer");
 
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date().toISOString().split("T")[0];
 
             const query = `
             query {
@@ -43,6 +43,13 @@ jobs:
                         ... on Issue {
                           title
                           url
+                          state
+                          assignees(first: 10) {
+                            nodes { login }
+                          }
+                          labels(first: 20) {
+                            nodes { name }
+                          }
                         }
                       }
                       fieldValues(first: 20) {
@@ -67,23 +74,22 @@ jobs:
 
             let matched = [];
 
+            const normalize = (d) => d ? d.split("T")[0] : null;
+
             for (const item of result.node.items.nodes) {
               const issue = item.content;
               if (!issue) continue;
 
+              let startDate = null;
+
               for (const field of item.fieldValues.nodes) {
-
-                const fieldName = field.field?.name;
-
-                // ✅ Start Date判定（ここ重要）
-                if (fieldName === "Start Date") {
-
-                  const date = field.date?.split("T")[0];
-
-                  if (date === today) {
-                    matched.push(issue);
-                  }
+                if (field.field?.name === "Start Date") {
+                  startDate = normalize(field.date);
                 }
+              }
+
+              if (startDate === today) {
+                matched.push(issue);
               }
             }
 
@@ -91,6 +97,36 @@ jobs:
               console.log("No issues starting today.");
               return;
             }
+
+            const getLabel = (issue, prefix) =>
+              issue.labels?.nodes
+                ?.find(l => l.name.toLowerCase().startsWith(prefix))
+                ?.name.replace(prefix, "").trim()
+              || "未設定";
+
+            const body = matched.map(issue => {
+
+              const isDone = issue.state === "closed" ? "✅ 完了" : "⏳ 未完了";
+
+              const assignees =
+                issue.assignees?.nodes?.map(a => a.login).join(", ")
+                || "未設定";
+
+              const status = getLabel(issue, "status:");
+              const priority = getLabel(issue, "priority:");
+
+              return `📌 ${issue.title}
+
+${isDone}
+
+👤 担当者 : ${assignees}
+🚦 進行状況 : ${status}
+🔥 優先順位 : ${priority}
+
+🔗 ${issue.url}
+`;
+
+            }).join("\n━━━━━━━━━━━━━━━━━━━━\n\n");
 
             const transporter = nodemailer.createTransport({
               service: "gmail",
@@ -100,14 +136,10 @@ jobs:
               }
             });
 
-            const body = matched
-              .map(issue => `• ${issue.title}\n${issue.url}`)
-              .join("\n\n");
-
             await transporter.sendMail({
               from: process.env.GMAIL_USER,
               to: process.env.GMAIL_USER,
-              subject: "📅 今日開始のGitHub課題",
+              subject: `📅 Start Date Tasks (${today})`,
               text: body
             });
 
