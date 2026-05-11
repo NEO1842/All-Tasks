@@ -1,4 +1,4 @@
-name: Project Simple Mail
+name: Project Date Mail
 
 on:
   schedule:
@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: npm install nodemailer
 
-      - name: Send Simple Dashboard Mail
+      - name: Send Date Dashboard Mail
         uses: actions/github-script@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -70,8 +70,6 @@ jobs:
             const res = await github.graphql(query);
             const items = res.node.items.nodes;
 
-            const today = new Date().toISOString().split("T")[0];
-
             function getField(item, name) {
               for (const f of item.fieldValues.nodes) {
                 if (f.field?.name === name) {
@@ -89,9 +87,11 @@ jobs:
 
               const startDate = getField(item, "Start Date");
 
-              if (startDate === today) {
+              if (startDate === new Date().toISOString().split("T")[0]) {
                 matched.push({
                   issue,
+                  startDate,
+                  dueDate: getField(item, "Due Date"),
                   status: getField(item, "Status"),
                   priority: getField(item, "Priority")
                 });
@@ -106,7 +106,7 @@ jobs:
             let html = `
             <div style="font-family:Arial;background:#f6f7fb;padding:20px">
               <div style="max-width:700px;margin:auto">
-                <h2 style="text-align:center">📅 今日のタスク</h2>
+                <h2 style="text-align:center">📅 タスク日程ダッシュボード</h2>
                 <hr />
             `;
 
@@ -126,6 +126,9 @@ jobs:
                 <h3>📌 ${t.issue.title}</h3>
 
                 <p>${isDone ? "✅ 完了" : "⏳ 未完了"}</p>
+
+                <p>📅 開始日 : ${t.startDate}</p>
+                <p>🎯 目標日 : ${t.dueDate}</p>
 
                 <p>🚦 ステータス : ${t.status}</p>
                 <p>🔥 優先度 : ${t.priority}</p>
@@ -149,7 +152,7 @@ jobs:
 
             html += `
               <p style="text-align:center;color:#999;font-size:12px">
-                GitHub Actions 自動通知
+                GitHub Actions 自動レポート
               </p>
               </div>
             </div>
@@ -166,7 +169,7 @@ jobs:
             await transporter.sendMail({
               from: process.env.GMAIL_USER,
               to: process.env.GMAIL_USER,
-              subject: "📅 今日のタスク",
+              subject: "📅 タスク日程ダッシュボード",
               html
             });
 
