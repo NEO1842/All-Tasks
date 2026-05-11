@@ -1,48 +1,88 @@
 const nodemailer = require("nodemailer");
 
+const token = process.env.GITHUB_TOKEN;
 const owner = "NEO1842";
 const repo = "All-Tasks";
 
-async function fetchIssues() {
-  const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/issues`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-        Accept: "application/vnd.github+json"
+// ─────────────────────────────
+// GraphQLでProject + Issue取得
+// ─────────────────────────────
+const query = `
+query {
+  repository(owner: "${owner}", name: "${repo}") {
+    issues(first: 100, states: OPEN) {
+      nodes {
+        title
+        url
+        state
+        assignees(first: 5) {
+          nodes {
+            login
+          }
+        }
+        labels(first: 20) {
+          nodes {
+            name
+          }
+        }
+        projectItems(first: 10) {
+          nodes {
+            fieldValues(first: 20) {
+              nodes {
+                ... on ProjectV2ItemFieldDateValue {
+                  date
+                  field {
+                    ... on ProjectV2FieldCommon {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
-  );
+  }
+}
+`;
 
-  return await res.json();
+// ─────────────────────────────
+// データ取得
+// ─────────────────────────────
+async function fetchData() {
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ query })
+  });
+
+  const json = await res.json();
+  return json.data.repository.issues.nodes;
 }
 
-// 🗓 開始日取得（ラベル or fallback）
+// ─────────────────────────────
+// Start Date取得
+// ─────────────────────────────
 function getStartDate(issue) {
-  // ① ラベル方式: start:2026-05-11
-  const label = issue.labels.find(l =>
-    l.name.toLowerCase().startsWith("start:")
-  );
-
-  if (label) {
-    return label.name.replace("start:", "").trim();
+  for (const item of issue.projectItems.nodes) {
+    for (const field of item.fieldValues.nodes) {
+      if (field.date && field.field?.name?.toLowerCase().includes("start")) {
+        return field.date;
+      }
+    }
   }
-
-  // ② Projects系（custom fieldっぽい名前対応）
-  const startField = issue.labels.find(l =>
-    l.name.toLowerCase().startsWith("開始日:")
-  );
-
-  if (startField) {
-    return startField.name.replace("開始日:", "").trim();
-  }
-
   return null;
 }
 
-// ステータス取得
+// ─────────────────────────────
+// ラベル取得
+// ─────────────────────────────
 function getLabel(issue, prefix, fallback) {
-  const label = issue.labels.find(l =>
+  const label = issue.labels.nodes.find(l =>
     l.name.toLowerCase().startsWith(prefix.toLowerCase())
   );
 
@@ -51,83 +91,48 @@ function getLabel(issue, prefix, fallback) {
     : fallback;
 }
 
+// ─────────────────────────────
+// メイン処理
+// ─────────────────────────────
 async function main() {
-  const issues = await fetchIssues();
+  const issues = await fetchData();
 
   const today = new Date().toISOString().split("T")[0];
 
-  // 🎯 開始日一致のみ抽出
-  const startTodayIssues = issues.filter(issue => {
-    if (issue.pull_request) return false;
-
-    const startDate = getStartDate(issue);
-
-    return startDate === today;
+  // 🎯 Start Dateが今日だけ抽出
+  const todayTasks = issues.filter(issue => {
+    const start = getStartDate(issue);
+    return start === today;
   });
 
   let body = "";
 
-  body += "📅 Start Day Issue Report\n";
+  body += "📅 Start Date Task Report\n";
   body += "====================================\n\n";
 
-  if (startTodayIssues.length === 0) {
-    body += "📭 今日開始の課題はありません。\n";
+  if (todayTasks.length === 0) {
+    body += "📭 今日開始のタスクはありません\n";
   }
 
-  const openIssues = [];
-  const closedIssues = [];
-
-  for (const issue of startTodayIssues) {
+  for (const issue of todayTasks) {
     const status = getLabel(issue, "status:", "No Status");
-    const progress = getLabel(issue, "progress:", "0%");
     const priority = getLabel(issue, "priority:", "Normal");
 
-    const data = {
-      title: issue.title,
-      status,
-      progress,
-      priority,
-      url: issue.html_url,
-      state: issue.state
-    };
+    const assignees = issue.assignees.nodes
+      .map(a => a.login)
+      .join(", ") || "未設定";
 
-    if (issue.state === "closed") {
-      closedIssues.push(data);
-    } else {
-      openIssues.push(data);
-    }
+    body += `📌 ${issue.title}\n\n`;
+    body += `👤 担当者 : ${assignees}\n`;
+    body += `🚦 進行状況 : ${status}\n`;
+    body += `🔥 優先順位 : ${priority}\n\n`;
+    body += `🔗 ${issue.url}\n\n`;
+    body += "━━━━━━━━━━━━━━━━━━━━\n\n";
   }
 
-  // 🚀 進行中
-  if (openIssues.length > 0) {
-    body += "🚀 開始（進行中）\n";
-    body += "------------------------------------\n\n";
-
-    for (const issue of openIssues) {
-      body += `📌 ${issue.title}\n\n`;
-      body += `🚦 Status   : ${issue.status}\n`;
-      body += `📊 Progress : ${issue.progress}\n`;
-      body += `🔥 Priority : ${issue.priority}\n\n`;
-      body += `🔗 ${issue.url}\n\n`;
-      body += "━━━━━━━━━━━━━━━━━━━━\n\n";
-    }
-  }
-
-  // ✅ 完了
-  if (closedIssues.length > 0) {
-    body += "\n✅ 完了済み\n";
-    body += "------------------------------------\n\n";
-
-    for (const issue of closedIssues) {
-      body += `✔ ${issue.title}\n\n`;
-      body += `🚦 Status   : ${issue.status}\n`;
-      body += `📊 Progress : ${issue.progress}\n`;
-      body += `🔥 Priority : ${issue.priority}\n\n`;
-      body += `🔗 ${issue.url}\n\n`;
-      body += "━━━━━━━━━━━━━━━━━━━━\n\n";
-    }
-  }
-
+  // ─────────────────────────────
+  // メール送信
+  // ─────────────────────────────
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -139,14 +144,11 @@ async function main() {
   await transporter.sendMail({
     from: process.env.GMAIL_USER,
     to: process.env.GMAIL_USER,
-    subject: `📅 Start Day Report (${today})`,
+    subject: `📅 Start Date Tasks (${today})`,
     text: body
   });
 
   console.log("Mail sent successfully!");
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+main().catch(console.error);
