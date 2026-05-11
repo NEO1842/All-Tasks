@@ -26,17 +26,21 @@ jobs:
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
           script: |
+
             const nodemailer = require("nodemailer");
 
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date().toISOString().split("T")[0];
 
             const query = `
             query {
               node(id: "PVT_kwHODIuak84BVv1F") {
                 ... on ProjectV2 {
+
                   items(first: 100) {
                     nodes {
 
@@ -44,7 +48,6 @@ jobs:
                         ... on Issue {
                           title
                           url
-                          number
 
                           labels(first: 20) {
                             nodes {
@@ -80,6 +83,7 @@ jobs:
 
                     }
                   }
+
                 }
               }
             }`;
@@ -101,21 +105,15 @@ jobs:
 
               for (const field of item.fieldValues.nodes) {
 
-                if (
-                  field.field?.name === "Start Date"
-                ) {
+                if (field.field?.name === "Start Date") {
                   startDate = field.date;
                 }
 
-                if (
-                  field.field?.name === "Status"
-                ) {
+                if (field.field?.name === "Status") {
                   status = field.name;
                 }
 
-                if (
-                  field.field?.name === "Progress"
-                ) {
+                if (field.field?.name === "Progress") {
                   progress = field.name;
                 }
 
@@ -126,8 +124,8 @@ jobs:
               const labels = issue.labels.nodes.map(l => l.name);
 
               const priority =
-                labels.find(l =>
-                  l.toLowerCase().includes("priority")
+                labels.find(label =>
+                  label.toLowerCase().includes("priority")
                 ) || "No Priority";
 
               const data = {
@@ -173,13 +171,12 @@ jobs:
 
             if (activeIssues.length > 0) {
 
-              body += "🚀 進行中 / 未完了\n";
+              body += "🚀 進行中のタスク\n";
               body += "------------------------------------\n\n";
 
               for (const issue of activeIssues) {
 
-                body +=
-`📌 ${issue.title}
+                body += `📌 ${issue.title}
 
 🚦 Status   : ${issue.status}
 📊 Progress : ${issue.progress}
@@ -202,8 +199,7 @@ jobs:
 
               for (const issue of completedIssues) {
 
-                body +=
-`✔ ${issue.title}
+                body += `✔ ${issue.title}
 
 🚦 Status   : ${issue.status}
 📊 Progress : ${issue.progress}
